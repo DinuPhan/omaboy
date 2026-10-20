@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "dinuphan.omaboy",
+  "name": "OmaBoy",
+  "version": "0.1.0",
+  "author": "Nguyen Dinh Phan",
+  "license": "MIT",
+  "description": "Control Omarchy like a Game Boy — dynamic focus-aware 8BitDo Micro & Zero 2 keymapper, live bar indicator, and interactive controller HUD.",
+  "kinds": ["bar-widget"],
+  "activation": "on-demand",
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "OmaBoy",
+    "description": "Game Boy / 8BitDo Micro & Zero 2 focus-aware controller status, profile switcher, and interactive keymap HUD.",
+    "category": "Hardware",
+    "aliases": ["omaboy", "8bitdo", "gamepad", "controller"],
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "refreshIntervalSec": 5,
+      "showOmarchyLayerFirst": false
+    },
+    "schema": [
+      {
+        "key": "refreshIntervalSec",
+        "type": "integer",
+        "label": "Status refresh interval (seconds)",
+        "min": 2,
+        "max": 60,
+        "step": 1,
+        "defaultValue": 5
+      },
+      {
+        "key": "showOmarchyLayerFirst",
+        "type": "boolean",
+        "label": "Default to Omarchy L2 Layer tab on open",
+        "defaultValue": false
+      }
+    ]
+  }
+}
