@@ -33,12 +33,9 @@ OmaBoy reads controller status and profile mappings from the companion [`8bitdo-
 ```bash
 git clone https://github.com/DinuPhan/8bitdo-micro-focus-switch.git
 cd 8bitdo-micro-focus-switch
-git checkout 296b02aa64e8c163cd06f5e9eff02b3bfd0e3632
+git checkout 56ef4528c45d3736e65f7a6ac316d7fee03b5744
 uv pip install -e .
-8bitdo-micro-focus-switch install-udev
-8bitdo-micro-focus-switch install-service
-systemctl --user daemon-reload
-systemctl --user enable --now 8bitdo-micro-focus-switch.service
+8bitdo-micro-focus-switch setup
 ```
 
 ---

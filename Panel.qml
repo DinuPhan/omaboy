@@ -47,9 +47,150 @@ Panel {
   property int activeTurn: 0
   property string activeWindowClass: ""
   property string activeWindowTitle: ""
-  property var profilesMap: ({})
-  property var profileNames: []
-  property var globalCombos: []
+  property var profilesMap: ({
+    "agy": {
+      "name": "agy",
+      "description": "Antigravity (agy) / Terminal Coding Profile",
+      "turn": 0,
+      "buttons": {
+        "A": { "label": "BACKSPACE", "description": "Backspace / Delete" },
+        "B": { "label": "PAGEDOWN", "description": "Page down" },
+        "X": { "label": "PAGEUP", "description": "Page up" },
+        "Y": { "label": "LEFTSHIFT+ENTER", "description": "Multiline newline" },
+        "L": { "label": "TAB", "description": "Tab completion / switch mode" },
+        "R": { "label": "LEFTCTRL+LEFTSHIFT+D", "description": "Toggle voice / debug mode" },
+        "L2": { "label": "LEFTSHIFT", "description": "Shift / Global combo modifier" },
+        "R2": { "label": "ENTER", "description": "Submit prompt" },
+        "SELECT": { "label": "ESC", "description": "Cancel / Escape" },
+        "START": { "label": "2+LEFTSHIFT", "description": "@ file mention" },
+        "STAR": { "label": "SPACE", "description": "Space" },
+        "HOME": { "label": "SLASH", "description": "/ command" },
+        "UP": { "label": "UP", "description": "Up / Previous history" },
+        "DOWN": { "label": "DOWN", "description": "Down / Next history" },
+        "LEFT": { "label": "LEFT", "description": "Cursor left" },
+        "RIGHT": { "label": "RIGHT", "description": "Cursor right" }
+      },
+      "combos": [
+        { "combo": "L+R", "buttons": ["L", "R"], "label": "LEFTMETA+K", "description": "Command palette" },
+        { "combo": "L2+R2", "buttons": ["L2", "R2"], "label": "LEFTSHIFT+TAB", "description": "Auto-approve file-edits" }
+      ]
+    },
+    "youtube": {
+      "name": "youtube",
+      "description": "YouTube Video Playback in Browser or Standalone Web App",
+      "turn": 0,
+      "buttons": {
+        "A": { "label": "SPACE", "description": "Play / Pause" },
+        "B": { "label": "M", "description": "Mute / Unmute" },
+        "X": { "label": "F", "description": "Fullscreen" },
+        "Y": { "label": "C", "description": "Subtitles / Captions" },
+        "L": { "label": "J", "description": "Rewind 10s" },
+        "R": { "label": "L", "description": "Fast-forward 10s" },
+        "L2": { "label": "LEFTSHIFT+COMMA", "description": "Decrease playback speed" },
+        "R2": { "label": "LEFTSHIFT+DOT", "description": "Increase playback speed" },
+        "SELECT": { "label": "ESC", "description": "Exit fullscreen" },
+        "START": { "label": "LEFTSHIFT+N", "description": "Next video" },
+        "STAR": { "label": "T", "description": "Theater mode" },
+        "HOME": { "label": "SLASH", "description": "Focus search bar" },
+        "UP": { "label": "UP", "description": "Volume Up / Scroll Up" },
+        "DOWN": { "label": "DOWN", "description": "Volume Down / Scroll Down" },
+        "LEFT": { "label": "LEFT", "description": "Seek back 5s" },
+        "RIGHT": { "label": "RIGHT", "description": "Seek forward 5s" }
+      },
+      "combos": [
+        { "combo": "L+R", "buttons": ["L", "R"], "label": "LEFTCTRL+W", "description": "Close tab" },
+        { "combo": "SELECT+START", "buttons": ["SELECT", "START"], "label": "LEFTCTRL+LEFTSHIFT+TAB", "description": "Previous tab" }
+      ]
+    },
+    "anki": {
+      "name": "anki",
+      "description": "Anki Flashcards (matches official 8BitDo Anki preset)",
+      "turn": 0,
+      "buttons": {
+        "A": { "label": "2", "description": "Good" },
+        "B": { "label": "1", "description": "Again" },
+        "X": { "label": "LEFTCTRL+LEFTSHIFT+D", "description": "Change deck" },
+        "Y": { "label": "LEFTCTRL+LEFTALT+N", "description": "Add note" },
+        "L": { "label": "SPACE", "description": "Show answer" },
+        "R": { "label": "4", "description": "Easy" },
+        "L2": { "label": "L", "description": "Global combo modifier" },
+        "R2": { "label": "R", "description": "Replay audio" },
+        "SELECT": { "label": "E", "description": "Edit card" },
+        "START": { "label": "KPASTERISK", "description": "Mark card" },
+        "STAR": { "label": "T", "description": "Stats" },
+        "HOME": { "label": "S", "description": "Study deck" },
+        "UP": { "label": "LEFTCTRL+DELETE", "description": "Delete note" },
+        "DOWN": { "label": "LEFTSHIFT+2", "description": "Suspend card" },
+        "LEFT": { "label": "LEFTCTRL+Z", "description": "Undo" },
+        "RIGHT": { "label": "KPMINUS", "description": "Bury card" }
+      },
+      "combos": []
+    },
+    "browser": {
+      "name": "browser",
+      "description": "General Web Browsing & Reading",
+      "turn": 0,
+      "buttons": {
+        "A": { "label": "SPACE", "description": "Page down" },
+        "B": { "label": "BACKSPACE", "description": "Back" },
+        "X": { "label": "PAGEUP", "description": "Scroll page up" },
+        "Y": { "label": "PAGEDOWN", "description": "Scroll page down" },
+        "L": { "label": "LEFTCTRL+LEFTSHIFT+TAB", "description": "Previous tab" },
+        "R": { "label": "LEFTCTRL+TAB", "description": "Next tab" },
+        "L2": { "label": "LEFTALT+LEFT", "description": "History back" },
+        "R2": { "label": "LEFTALT+RIGHT", "description": "History forward" },
+        "SELECT": { "label": "LEFTCTRL+W", "description": "Close tab" },
+        "START": { "label": "LEFTCTRL+T", "description": "New tab" },
+        "STAR": { "label": "LEFTCTRL+R", "description": "Reload page" },
+        "HOME": { "label": "LEFTCTRL+LEFTSHIFT+T", "description": "Reopen closed tab" },
+        "UP": { "label": "UP", "description": "Scroll up" },
+        "DOWN": { "label": "DOWN", "description": "Scroll down" },
+        "LEFT": { "label": "LEFT", "description": "Left" },
+        "RIGHT": { "label": "RIGHT", "description": "Right" }
+      },
+      "combos": []
+    },
+    "media": {
+      "name": "media",
+      "description": "Desktop Media Players (MPV / VLC)",
+      "turn": 0,
+      "buttons": {
+        "A": { "label": "SPACE", "description": "Play / Pause" },
+        "B": { "label": "M", "description": "Mute" },
+        "X": { "label": "F", "description": "Fullscreen" },
+        "Y": { "label": "J", "description": "Cycle subtitles" },
+        "L": { "label": "LEFTBRACE", "description": "Decrease speed" },
+        "R": { "label": "RIGHTBRACE", "description": "Increase speed" },
+        "L2": { "label": "9", "description": "Volume down" },
+        "R2": { "label": "0", "description": "Volume up" },
+        "SELECT": { "label": "Q", "description": "Quit player" },
+        "START": { "label": "O", "description": "Show progress OSD" },
+        "STAR": { "label": "S", "description": "Screenshot" },
+        "HOME": { "label": "I", "description": "Playback stats" },
+        "UP": { "label": "UP", "description": "Seek +60s" },
+        "DOWN": { "label": "DOWN", "description": "Seek -60s" },
+        "LEFT": { "label": "LEFT", "description": "Seek -5s" },
+        "RIGHT": { "label": "RIGHT", "description": "Seek +5s" }
+      },
+      "combos": []
+    }
+  })
+  property var profileNames: ["agy", "youtube", "anki", "browser", "media"]
+  property var globalCombos: [
+    { "combo": "L+R", "buttons": ["L", "R"], "label": "LEFTMETA+K", "description": "Command palette / app launcher" },
+    { "combo": "L2+A", "buttons": ["A", "L2"], "label": "exec:omarchy-launch-or-focus ghostty omarchy-launch-terminal", "description": "Focus/Open Terminal" },
+    { "combo": "L2+B", "buttons": ["B", "L2"], "label": "LEFTMETA+SPACE", "description": "Omarchy Menu / Launcher" },
+    { "combo": "L2+DOWN", "buttons": ["DOWN", "L2"], "label": "LEFTMETA+T", "description": "Toggle floating / tiling" },
+    { "combo": "L2+L", "buttons": ["L", "L2"], "label": "LEFTMETA+TAB", "description": "Next workspace" },
+    { "combo": "L2+LEFT", "buttons": ["L2", "LEFT"], "label": "LEFTMETA+LEFT", "description": "Focus window left" },
+    { "combo": "L2+R", "buttons": ["L2", "R"], "label": "F9", "description": "Whisper voice dictation" },
+    { "combo": "L2+RIGHT", "buttons": ["L2", "RIGHT"], "label": "LEFTMETA+RIGHT", "description": "Focus window right" },
+    { "combo": "L2+SELECT", "buttons": ["L2", "SELECT"], "label": "LEFTMETA+W", "description": "Close active window" },
+    { "combo": "L2+START", "buttons": ["L2", "START"], "label": "exec:omarchy-shell shell toggle dinuphan.omaboy", "description": "Toggle OmaBoy HUD panel" },
+    { "combo": "L2+UP", "buttons": ["L2", "UP"], "label": "LEFTMETA+F", "description": "Fullscreen window" },
+    { "combo": "L2+X", "buttons": ["L2", "X"], "label": "exec:omarchy-launch-or-focus-webapp 'Google Photos' https://photos.google.com/", "description": "Focus/Open Google Photos" },
+    { "combo": "L2+Y", "buttons": ["L2", "Y"], "label": "exec:omarchy-launch-or-focus-webapp YouTube https://youtube.com/", "description": "Focus/Open YouTube" }
+  ]
 
   // UI state: "profile" shows per-app mapping; "omarchy" shows global L2 layer
   property string viewMode: setting("showOmarchyLayerFirst", false) ? "omarchy" : "profile"
