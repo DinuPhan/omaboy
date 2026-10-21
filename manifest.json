@@ -20,7 +20,9 @@
     "defaultSection": "right",
     "defaults": {
       "refreshIntervalSec": 5,
-      "showOmarchyLayerFirst": false
+      "showOmarchyLayerFirst": false,
+      "osdEnabled": true,
+      "osdDurationMs": 1800
     },
     "schema": [
       {
@@ -37,6 +39,21 @@
         "type": "boolean",
         "label": "Default to Omarchy L2 Layer tab on open",
         "defaultValue": false
+      },
+      {
+        "key": "osdEnabled",
+        "type": "boolean",
+        "label": "Show on-screen Key-Press Overlay (Onboarding / Demo OSD)",
+        "defaultValue": true
+      },
+      {
+        "key": "osdDurationMs",
+        "type": "integer",
+        "label": "Key-Press Overlay display duration (ms)",
+        "min": 800,
+        "max": 5000,
+        "step": 200,
+        "defaultValue": 1800
       }
     ]
   }

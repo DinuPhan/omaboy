@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
+import Quickshell.Wayland
 import qs.Commons
 import qs.Ui
 
@@ -65,6 +66,21 @@ Panel {
   property string editKeyText: ""
   property string editDescText: ""
   property bool capturingKeypress: false
+
+  // Live Key-Press OSD Overlay State (Onboarding & Demo Mode)
+  property bool osdEnabled: setting("osdEnabled", true)
+  readonly property int osdDurationMs: Math.max(800, Number(setting("osdDurationMs", 1800)))
+  property bool osdVisible: false
+  property int lastKeypressSeq: -1
+  property var osdButtons: []
+  property string osdButtonText: ""
+  property string osdRawKey: ""
+  property string osdPrettyKey: ""
+  property string osdDescription: ""
+  property string osdProfileName: "agy"
+  property bool osdIsGlobalLayer: false
+  property string osdPrimaryColor: root.colFace
+  property real osdTimerProgress: 1.0
 
   readonly property int refreshIntervalMs: Math.max(2, Number(setting("refreshIntervalSec", 5))) * 1000
 
@@ -351,6 +367,129 @@ Panel {
     root.close()
   }
 
+  function metaForButton(btnKey) {
+    for (var i = 0; i < buttonMetaList.length; i++) {
+      if (buttonMetaList[i].key === btnKey) return buttonMetaList[i]
+    }
+    return { key: btnKey, label: btnKey, color: root.colFace, cx: 600, cy: 336 }
+  }
+
+  function isButtonActiveInOsd(btnKey) {
+    return root.osdVisible && root.osdButtons && root.osdButtons.indexOf(btnKey) !== -1
+  }
+
+  function fallbackDescriptionForKey(rawKey) {
+    var k = String(rawKey || "").trim()
+    var u = k.toUpperCase()
+    if (u === "SPACE" || u === "K") return "Play / Pause / Activate"
+    if (u === "ENTER") return "Confirm / Open / Submit"
+    if (u === "ESC" || u === "ESCAPE") return "Escape / Cancel / Unfocus"
+    if (u === "TAB") return "Next Focusable Element"
+    if (u === "LEFTSHIFT+TAB") return "Previous Focusable Element"
+    if (u === "VOLUMEUP") return "Volume Up"
+    if (u === "VOLUMEDOWN") return "Volume Down"
+    if (u === "F") return "Toggle Video Fullscreen"
+    if (u === "C") return "Toggle Subtitles / Captions"
+    if (u === "M") return "Mute / Unmute Audio"
+    if (u === "SLASH") return "Focus Search Bar (/)"
+    if (u === "F9") return "Whisper Voice Dictation"
+    if (u === "LEFT") return "Navigate / Seek Left"
+    if (u === "RIGHT") return "Navigate / Seek Right"
+    if (u === "UP") return "Navigate / Scroll Up"
+    if (u === "DOWN") return "Navigate / Scroll Down"
+    if (u === "PAGEUP") return "Scroll Page Up"
+    if (u === "PAGEDOWN") return "Scroll Page Down"
+    if (u === "LEFTALT+LEFT") return "Navigate Back"
+    if (u === "LEFTMETA+F") return "Toggle Window Fullscreen"
+    if (u === "LEFTMETA+W") return "Close Active Window"
+    if (u === "LEFTMETA+T") return "Toggle Window Float / Tile"
+    if (u === "LEFTMETA+SPACE") return "Open Application Launcher"
+    if (k.indexOf("exec:") === 0) return prettyAction(k, 42)
+    return "Send " + prettyAction(k, 32)
+  }
+
+  function triggerKeyOsd(payload) {
+    if (!root.osdEnabled || !payload) return
+    var btns = Array.isArray(payload.buttons) && payload.buttons.length > 0
+      ? payload.buttons
+      : (payload.button ? String(payload.button).split("+") : ["A"])
+    root.osdButtons = btns
+    root.osdButtonText = btns.join(" + ")
+    var rawK = String(payload.key || "None")
+    root.osdRawKey = rawK
+    root.osdPrettyKey = prettyAction(rawK, 38)
+    var desc = String(payload.description || "").trim()
+    if (desc === "") {
+      // Check loaded profile / globalCombos for description if not present in payload
+      var profName = String(payload.profile || root.activeProfileName || "agy")
+      if (btns.length === 2 && (btns[0] === "L2" || btns[1] === "L2")) {
+        for (var i = 0; i < globalCombos.length; i++) {
+          var gc = globalCombos[i]
+          var gbtns = gc.buttons || []
+          if (gbtns.length === 2 && gbtns.indexOf(btns[0]) !== -1 && gbtns.indexOf(btns[1]) !== -1) {
+            desc = String(gc.description || "")
+            break
+          }
+        }
+      } else if (btns.length === 1 && root.profilesMap && profName in root.profilesMap) {
+        var p = root.profilesMap[profName]
+        if (p && p.buttons && btns[0] in p.buttons) {
+          desc = String(p.buttons[btns[0]].description || "")
+        }
+      }
+    }
+    if (desc === "") desc = fallbackDescriptionForKey(rawK)
+    root.osdDescription = desc
+    root.osdProfileName = String(payload.profile || root.activeProfileName || "agy")
+    root.osdIsGlobalLayer = payload.is_global_layer === true || (btns.length > 1 && btns.indexOf("L2") !== -1)
+    var primaryBtn = btns.length > 1 && btns[0] === "L2" ? btns[1] : btns[0]
+    root.osdPrimaryColor = root.osdIsGlobalLayer ? root.colBottom : metaForButton(primaryBtn).color
+    root.osdTimerProgress = 1.0
+    root.osdVisible = true
+    osdProgressAnim.restart()
+    osdHideTimer.restart()
+    leaderCanvas.requestPaint()
+    osdControllerCanvas.requestPaint()
+  }
+
+  function handleKeypressFileText(rawText) {
+    var trimmed = String(rawText || "").trim()
+    if (trimmed === "") return
+    try {
+      var data = JSON.parse(trimmed)
+      var seq = Number(data.seq || 0)
+      if (root.lastKeypressSeq < 0) {
+        root.lastKeypressSeq = seq
+        return
+      }
+      if (seq > 0 && seq !== root.lastKeypressSeq) {
+        root.lastKeypressSeq = seq
+        root.triggerKeyOsd(data)
+      }
+    } catch (e) {}
+  }
+
+  function toggleKeyOsd() {
+    root.osdEnabled = !root.osdEnabled
+    if (root.osdEnabled) {
+      root.statusNotice = "󰍹 On-Screen Key-Press Overlay: ENABLED (Demo / Onboarding Mode)"
+      noticeClearTimer.restart()
+      root.triggerKeyOsd({
+        buttons: ["L2", "START"],
+        key: "OmaBoy Key-Caster OSD",
+        description: "Key-Press Overlay Active — Press any controller button!",
+        profile: root.activeProfileName,
+        is_global_layer: true
+      })
+    } else {
+      root.osdVisible = false
+      osdHideTimer.stop()
+      root.statusNotice = "󰍹 On-Screen Key-Press Overlay: DISABLED"
+      noticeClearTimer.restart()
+      leaderCanvas.requestPaint()
+    }
+  }
+
   function toggleDaemonService() {
     var action = root.serviceActive ? "restart" : "start"
     statusNotice = (action === "restart" ? "Restarting" : "Starting") + " daemon service…"
@@ -429,6 +568,34 @@ Panel {
   }
 
   Timer {
+    id: osdHideTimer
+    interval: root.osdDurationMs
+    repeat: false
+    onTriggered: {
+      root.osdVisible = false
+      leaderCanvas.requestPaint()
+    }
+  }
+
+  NumberAnimation {
+    id: osdProgressAnim
+    target: root
+    property: "osdTimerProgress"
+    from: 1.0
+    to: 0.0
+    duration: root.osdDurationMs
+  }
+
+  FileView {
+    id: keypressFileView
+    path: (Quickshell.env("HOME") || "") + "/.cache/8bitdo-micro/last_keypress.json"
+    watchChanges: true
+    printErrors: false
+    onLoaded: root.handleKeypressFileText(text())
+    onFileChanged: reload()
+  }
+
+  Timer {
     interval: root.refreshIntervalMs
     running: true
     repeat: true
@@ -454,7 +621,10 @@ Panel {
   onHoveredButtonKeyChanged: leaderCanvas.requestPaint()
   onViewModeChanged: leaderCanvas.requestPaint()
   onSelectedProfileNameChanged: leaderCanvas.requestPaint()
-  onIsLightThemeChanged: leaderCanvas.requestPaint()
+  onIsLightThemeChanged: {
+    leaderCanvas.requestPaint()
+    osdControllerCanvas.requestPaint()
+  }
 
   IpcHandler {
     target: root.ipcTarget
@@ -465,6 +635,7 @@ Panel {
     function toggle() { root.toggle() }
     function refresh() { root.refreshStatus(true) }
     function reload() { root.reloadDaemon() }
+    function toggleOsd() { root.toggleKeyOsd() }
   }
 
   BarIconButton {
@@ -510,6 +681,7 @@ Panel {
         if (t === "r" || t === "R") root.reloadDaemon()
         else if (t === "l" || t === "L") root.viewMode = root.viewMode === "profile" ? "omarchy" : "profile"
         else if (t === "e" || t === "E") root.editProfilesInEditor()
+        else if (t === "o" || t === "O") root.toggleKeyOsd()
       }
 
       Flickable {
@@ -570,7 +742,6 @@ Panel {
                 Text {
                   text: (root.connected ? "🟢 Connected (uinput <1ms)" : "⚪ Bluetooth Sleeping")
                     + "   •   Active Window Profile: " + root.activeProfileName.toUpperCase()
-                    + "   •   Click any button or card to rebind"
                   color: root.dim
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.caption
@@ -583,6 +754,18 @@ Panel {
               anchors.right: parent.right
               anchors.verticalCenter: parent.verticalCenter
               spacing: Style.space(8)
+
+              Button {
+                text: root.osdEnabled ? "󰍹 Key OSD: ON" : "󰍹 Key OSD: OFF"
+                selected: root.osdEnabled
+                bordered: true
+                foreground: root.foreground
+                fontFamily: root.fontFamily
+                fontSize: Style.font.caption
+                verticalPadding: Style.space(6)
+                horizontalPadding: Style.space(12)
+                onClicked: root.toggleKeyOsd()
+              }
 
               Button {
                 text: "↻ Reload"
@@ -726,7 +909,7 @@ Panel {
 
                 for (var i = 0; i < list.length; i++) {
                   var m = list[i]
-                  var isHov = (root.hoveredButtonKey === m.key)
+                  var isHov = (root.hoveredButtonKey === m.key) || root.isButtonActiveInOsd(m.key)
                   ctx.save()
                   ctx.beginPath()
                   ctx.moveTo(m.cx * sx, m.cy * sy)
@@ -807,7 +990,7 @@ Panel {
                 readonly property string rawAct: root.rawActionForButton(modelData.key)
                 readonly property string actLabel: root.prettyAction(rawAct, 20)
                 readonly property string descStr: root.descForButton(modelData.key)
-                readonly property bool isHovered: root.hoveredButtonKey === modelData.key
+                readonly property bool isHovered: (root.hoveredButtonKey === modelData.key) || root.isButtonActiveInOsd(modelData.key)
                 readonly property color badgeColor: Qt.color(modelData.color)
 
                 BorderSurface {
@@ -1268,6 +1451,243 @@ Panel {
             }
           }
         }
+      }
+    }
+  }
+
+  // ---------- Floating Click-Through Key-Press OSD Overlay (Onboarding & Demo Mode) ----------
+  PanelWindow {
+    id: keyOsdWindow
+    visible: root.osdEnabled && root.osdVisible
+    anchors { top: true; bottom: true; left: true; right: true }
+    color: "transparent"
+    WlrLayershell.namespace: "omarchy-omaboy-osd"
+    WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    exclusionMode: ExclusionMode.Ignore
+    // Empty input region so the overlay is 100% click-through and never steals focus
+    mask: Region {}
+
+    BorderSurface {
+      id: osdCard
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      anchors.rightMargin: Style.space(28)
+      anchors.bottomMargin: Style.space(28)
+      width: Math.max(Style.space(390), osdMainRow.implicitWidth + Style.space(30))
+      height: Math.max(Style.space(102), osdMainRow.implicitHeight + Style.space(28))
+      radius: Style.cornerRadius
+      color: root.alpha(root.surface, 0.97)
+      borderSpec: Border.flat(Qt.color(root.osdPrimaryColor), 1.8)
+      clip: true
+
+      Row {
+        id: osdMainRow
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.margins: Style.space(13)
+        spacing: Style.space(14)
+
+        // Left: Mini 8BitDo Micro Silhouette with Live Glowing Pressed Pin(s)
+        BorderSurface {
+          id: miniCtrlBox
+          width: Style.space(126)
+          height: Style.space(76)
+          anchors.verticalCenter: parent.verticalCenter
+          radius: Style.space(8)
+          color: root.alpha(root.foreground, root.isLightTheme ? 0.055 : 0.05)
+          borderSpec: Border.flat(root.cardBorderColor, 1.0)
+
+          Image {
+            id: miniCtrlImg
+            anchors.fill: parent
+            anchors.margins: Style.space(4)
+            source: Qt.resolvedUrl("assets/micro-controller.png")
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+          }
+
+          Canvas {
+            id: osdControllerCanvas
+            anchors.fill: miniCtrlImg
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
+
+            onPaint: {
+              var ctx = getContext("2d")
+              ctx.reset()
+              var w = width
+              var h = height
+              if (w <= 0 || h <= 0) return
+              var list = root.buttonMetaList
+              var activeBtns = root.osdButtons || []
+              var light = root.isLightTheme
+
+              // Draw subtle dim dots for all buttons, and glowing highlight rings for pressed button(s)
+              for (var i = 0; i < list.length; i++) {
+                var m = list[i]
+                var rx = ((m.cx - 334.0) / 532.0) * w
+                var ry = ((m.cy - 185.0) / 329.0) * h
+                var isPressed = activeBtns.indexOf(m.key) !== -1
+                ctx.save()
+                if (isPressed) {
+                  // Outer glow halo
+                  ctx.beginPath()
+                  ctx.arc(rx, ry, 9.5, 0, Math.PI * 2)
+                  ctx.fillStyle = m.color
+                  ctx.globalAlpha = light ? 0.34 : 0.42
+                  ctx.fill()
+
+                  // Contrast ring
+                  ctx.beginPath()
+                  ctx.arc(rx, ry, 6.2, 0, Math.PI * 2)
+                  ctx.fillStyle = "#ffffff"
+                  ctx.globalAlpha = 0.92
+                  ctx.fill()
+
+                  // Solid center pin
+                  ctx.beginPath()
+                  ctx.arc(rx, ry, 4.4, 0, Math.PI * 2)
+                  ctx.fillStyle = m.color
+                  ctx.globalAlpha = 1.0
+                  ctx.fill()
+                } else {
+                  ctx.beginPath()
+                  ctx.arc(rx, ry, 2.0, 0, Math.PI * 2)
+                  ctx.fillStyle = m.color
+                  ctx.globalAlpha = light ? 0.35 : 0.28
+                  ctx.fill()
+                }
+                ctx.restore()
+              }
+            }
+          }
+        }
+
+        // Right: Profile Header + Tactile Controller Button Cap(s) ➔ Mapped Key + Description
+        Column {
+          id: osdTextCol
+          anchors.verticalCenter: parent.verticalCenter
+          spacing: Style.space(5)
+
+          // Row 1: Context / Layer Pill
+          Row {
+            spacing: Style.space(8)
+
+            BorderSurface {
+              height: Style.space(19)
+              width: layerTagText.implicitWidth + Style.space(12)
+              radius: Style.space(4)
+              color: root.alpha(Qt.color(root.osdPrimaryColor), root.isLightTheme ? 0.14 : 0.20)
+              borderSpec: Border.flat(root.alpha(Qt.color(root.osdPrimaryColor), 0.55), 1.0)
+
+              Text {
+                id: layerTagText
+                anchors.centerIn: parent
+                text: root.osdIsGlobalLayer
+                  ? "⚡ OMARCHY FN LAYER (HOLD L2)"
+                  : ("󰊴 PROFILE · " + root.osdProfileName.toUpperCase())
+                color: Qt.color(root.osdPrimaryColor)
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption - 1
+                font.bold: true
+              }
+            }
+          }
+
+          // Row 2: Pressed Controller Button Cap(s) ➔ Mapped Key Badge
+          Row {
+            spacing: Style.space(7)
+
+            Repeater {
+              model: root.osdButtons
+
+              Row {
+                required property var modelData
+                required property int index
+                spacing: Style.space(5)
+                readonly property var btnMeta: root.metaForButton(String(modelData))
+
+                Text {
+                  visible: index > 0
+                  anchors.verticalCenter: parent.verticalCenter
+                  text: "+"
+                  color: root.dim
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.bodySmall
+                  font.bold: true
+                }
+
+                BorderSurface {
+                  anchors.verticalCenter: parent.verticalCenter
+                  height: Style.space(25)
+                  width: Math.max(Style.space(32), capLabel.implicitWidth + Style.space(14))
+                  radius: Style.space(5)
+                  color: root.alpha(Qt.color(btnMeta.color), root.isLightTheme ? 0.16 : 0.24)
+                  borderSpec: Border.flat(Qt.color(btnMeta.color), 1.4)
+
+                  Text {
+                    id: capLabel
+                    anchors.centerIn: parent
+                    text: btnMeta.label
+                    color: Qt.color(btnMeta.color)
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.caption
+                    font.bold: true
+                  }
+                }
+              }
+            }
+
+            Text {
+              anchors.verticalCenter: parent.verticalCenter
+              text: "➔"
+              color: Qt.color(root.osdPrimaryColor)
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.bodySmall
+              font.bold: true
+            }
+
+            BorderSurface {
+              anchors.verticalCenter: parent.verticalCenter
+              height: Style.space(25)
+              width: mappedKeyText.implicitWidth + Style.space(14)
+              radius: Style.space(5)
+              color: root.cardFillColor
+              borderSpec: Border.flat(root.cardBorderColor, 1.1)
+
+              Text {
+                id: mappedKeyText
+                anchors.centerIn: parent
+                text: root.osdPrettyKey
+                color: root.foreground
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                font.bold: true
+              }
+            }
+          }
+
+          // Row 3: Human-Readable Action Description (for Onboarding & Demo)
+          Text {
+            text: root.osdDescription
+            color: root.foreground
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.bodySmall
+            font.bold: true
+            elide: Text.ElideRight
+            width: Math.min(implicitWidth, Style.space(340))
+          }
+        }
+      }
+
+      // Bottom Progress Bar showing remaining OSD duration
+      Rectangle {
+        anchors.left: parent.left
+        anchors.bottom: parent.bottom
+        height: Style.space(3)
+        width: parent.width * root.osdTimerProgress
+        color: Qt.color(root.osdPrimaryColor)
       }
     }
   }
