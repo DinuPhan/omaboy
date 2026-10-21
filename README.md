@@ -1,40 +1,53 @@
-# OmaBoy (`dinuphan.omaboy`)
+# OmaBoy 
 
-**A Game Boy-like way to control your Omarchy.**
+**Use your 8bitdo micro/zero2 controller to control your Omarchy.**
 
 **OmaBoy** is a native [Omarchy Quattro](https://plugins.omarchy.org/) status bar widget, interactive controller HUD, and live Key-Caster OSD overlay for the **8BitDo Micro** and **8BitDo Zero 2** pocket controllers, powered by [`8bitdo-micro-focus-switch`](https://github.com/DinuPhan/8bitdo-micro-focus-switch).
 
 ![OmaBoy HUD and Live Key-Caster OSD](preview.png)
 
----
+## Why?
+
+I originally bought an 8BitDo Micro to play retro games on Omarchy, then realized this tiny controller fits in one hand and makes a great shortcut pad for coding in the terminal, watching YouTube, or reviewing Anki flashcards without touching my keyboard.
+
+The catch with a pocket controller is that it only remembers one set of buttons at a time, and with 16 tiny buttons, it is easy to forget what each one does when you jump between apps. I built [`8bitdo-micro-focus-switch`](https://github.com/DinuPhan/8bitdo-micro-focus-switch) to handle the automatic profile switching in the background, and I built **OmaBoy** so I can see and change my controller buttons right from the Omarchy top bar.
+
+## How it works
+
+I split the setup into two small parts that talk to each other:
+
+1. **`8bitdo-micro-focus-switch` (the translator running in the background)**:
+   When you flip the 8BitDo Micro into Keyboard mode (`K`), the controller itself just sends basic letters whenever you press a button. My background CLI sits between the controller and your apps. It watches which window you are looking at and translates those button presses into the shortcuts that app expects. If I click on YouTube, pressing `A` sends `Space` to play or pause the video. If I click back to my terminal, pressing that exact same `A` button sends `Backspace`. I can also press two buttons together (like holding `L2` and tapping `Y`) to control Omarchy itself, like opening YouTube or switching workspaces.
+
+2. **`OmaBoy` (this top-bar plugin)**:
+   While the CLI does the translating behind the scenes, OmaBoy is what you see on screen:
+   - A little controller icon (`󰊴`) in the top bar lights up as soon as I turn my 8BitDo Micro on, so I know it is connected.
+   - Clicking that icon opens the visual HUD, which draws the controller and labels every button for the app I am currently using, so I never have to memorize my layout.
+   - If I want a button to do something else, I click that button on the picture and press the new key on my keyboard. OmaBoy tells the CLI to save the change and apply it right away.
+   - When I turn on **Key OSD**, a small popup in the bottom-right corner lights up whichever button I just pressed on the controller and shows the shortcut it triggered.
 
 ## Features
 
-- **Live Status Bar Indicator (`󰊴`)**: Highlights when your 8BitDo Micro or Zero 2 is connected over Bluetooth (`uinput` mode) and dims when idle or asleep.
-- **Interactive Visual 8BitDo Controller HUD**:
-  - **Full Controller Diagram**: Renders the 8BitDo Micro silhouette with semantic color-coded leader polylines, glowing button pins, and hover tooltips.
-  - **Click-to-Rebind Modal**: Click any button card, pin, or multi-button combo chip to rebind it on the fly—either by pressing a physical keyboard shortcut (`Press to Capture Key`), selecting a quick-pick preset chip, or typing a custom key/chord or `exec:...` command + description.
-  - **App Keymap View**: Automatically tracks your focused Hyprland window (`agy`, `youtube`, `anki`, `browser`, `media`) and displays what every button (`D-Pad`, `X/Y/A/B`, `L/R/L2/R2`, `Select/Start/Star/Home`) does in the active app.
-  - **Global System Chords Layer**: View and customize your global multi-button chords that sit on top of every app profile to control Omarchy system-wide (e.g., launching or focusing YouTube/Terminal/Google Photos, toggling fullscreen, switching windows, or triggering Whisper voice dictation).
-  - **Adaptive Light & Dark Theme Contrast**: Automatically detects your active Omarchy theme luminance and switches between Catppuccin Mocha pastels on dark themes and high-contrast ink tones on bright/light themes.
-- **Live Key-Caster OSD Overlay (Onboarding & Demo Mode)**:
-  - Displays a non-intrusive, click-through overlay in the bottom-right corner whenever a controller button or combo is pressed, lighting up the exact physical pin(s) on a mini controller diagram alongside the mapped shortcut and human-readable action description.
-  - Toggleable anytime from the HUD header (`󰍹 Key OSD: ON / OFF`), keyboard shortcut (`O`), or CLI (`omarchy-shell dinuphan.omaboy toggleOsd`).
-- **One-Click Daemon Controls**:
-  - **Reload Config (`R`)**: Sends a zero-downtime `SIGHUP` to `8bitdo-micro-focus-switch.service`.
-  - **Edit Config (`E`)**: Opens `~/.config/8bitdo-micro/profiles.toml` in your configured Omarchy editor without overwriting user configuration without explicit consent.
-
----
+- **Live status bar indicator (`󰊴`)**: Lights up when your 8BitDo Micro or Zero 2 is connected over Bluetooth and dims when the controller goes to sleep.
+- **Interactive controller HUD**:
+  - Draws the 8BitDo Micro with color-coded lines to each button so you can read your layout at a glance.
+  - Click any button card, pin, or combo chip to rebind it. You can capture a key directly from your keyboard, pick from common shortcuts, or type a custom command.
+  - Switches views automatically to match your focused window (`agy`, `youtube`, `anki`, `browser`, `media`).
+  - Includes a separate tab for your **Omarchy Global Layer**, where two-button chords control your window manager from inside any app.
+  - Adapts its colors to both dark and light Omarchy themes so labels stay easy to read.
+- **Live Key-Caster OSD overlay**:
+  - Shows a small, click-through popup in the bottom-right corner whenever you press a button or combo on the controller.
+  - Toggle it from the HUD header (`󰍹 Key OSD: ON / OFF`), with the `O` key inside the panel, or from the terminal (`omarchy-shell dinuphan.omaboy toggleOsd`).
+- **Quick config controls**:
+  - Press `R` to reload `~/.config/8bitdo-micro/profiles.toml` without restarting the background service.
+  - Press `E` to open `profiles.toml` directly in your editor.
 
 ## Prerequisites & External Dependencies
 
-OmaBoy reads controller status and profile mappings from the companion [`8bitdo-micro-focus-switch`](https://github.com/DinuPhan/8bitdo-micro-focus-switch) user daemon (`MIT` license):
+OmaBoy reads controller status and profile mappings from [`8bitdo-micro-focus-switch`](https://github.com/DinuPhan/8bitdo-micro-focus-switch) (`MIT` license). Install the `v0.2.0` release and run the one-step setup:
 
 ```bash
-git clone https://github.com/DinuPhan/8bitdo-micro-focus-switch.git
-cd 8bitdo-micro-focus-switch
-git checkout 56ef4528c45d3736e65f7a6ac316d7fee03b5744
-uv pip install -e .
+uv tool install git+https://github.com/DinuPhan/8bitdo-micro-focus-switch.git@v0.2.0
 8bitdo-micro-focus-switch setup
 ```
 
