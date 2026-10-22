@@ -12,6 +12,9 @@ Panel {
   ipcTarget: "dinuphan.omaboy"
   manageIpc: false
 
+  implicitWidth: button.implicitWidth
+  implicitHeight: button.implicitHeight
+
   readonly property color foreground: bar ? bar.foreground : Color.foreground
   readonly property color urgent: bar ? bar.urgent : Color.urgent
   readonly property color accent: Color.accent
