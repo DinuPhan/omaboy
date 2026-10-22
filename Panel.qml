@@ -634,7 +634,7 @@ Panel {
   function toggleDaemonService() {
     var action = root.serviceActive ? "restart" : "start"
     statusNotice = (action === "restart" ? "Restarting" : "Starting") + " daemon service…"
-    Quickshell.execDetached(["systemctl", "--user", action, "8bitdo-micro-focus-switch.service"])
+    Quickshell.execDetached(["sh", "-c", "systemctl --user reset-failed 8bitdo-micro-focus-switch.service 2>/dev/null; systemctl --user " + action + " 8bitdo-micro-focus-switch.service"])
     refreshDelayTimer.restart()
   }
 
