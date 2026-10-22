@@ -44,12 +44,14 @@ I split the setup into two small parts that talk to each other:
 
 ## Prerequisites & External Dependencies
 
-OmaBoy reads controller status and profile mappings from [`8bitdo-micro-focus-switch`](https://github.com/DinuPhan/8bitdo-micro-focus-switch) (`MIT` license). Install the `v0.2.0` release and run the one-step setup:
+OmaBoy reads controller status and profile mappings from [`8bitdo-micro-focus-switch`](https://github.com/DinuPhan/8bitdo-micro-focus-switch) (`MIT` license). Install the reviewed `v0.2.0` release pinned to its immutable commit SHA (`8ee63e55c3d400f23ff48b566861268e6f8469cf`) and run the one-step setup:
 
 ```bash
-uv tool install git+https://github.com/DinuPhan/8bitdo-micro-focus-switch.git@v0.2.0
+uv tool install git+https://github.com/DinuPhan/8bitdo-micro-focus-switch.git@8ee63e55c3d400f23ff48b566861268e6f8469cf
 8bitdo-micro-focus-switch setup
 ```
+
+*(Alternatively, with `pipx`: `pipx install git+https://github.com/DinuPhan/8bitdo-micro-focus-switch.git@8ee63e55c3d400f23ff48b566861268e6f8469cf`)*
 
 ---
 

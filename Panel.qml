@@ -634,7 +634,8 @@ Panel {
   function toggleDaemonService() {
     var action = root.serviceActive ? "restart" : "start"
     statusNotice = (action === "restart" ? "Restarting" : "Starting") + " daemon service…"
-    Quickshell.execDetached(["sh", "-c", "systemctl --user reset-failed 8bitdo-micro-focus-switch.service 2>/dev/null; systemctl --user " + action + " 8bitdo-micro-focus-switch.service"])
+    Quickshell.execDetached(["systemctl", "--user", "reset-failed", "8bitdo-micro-focus-switch.service"])
+    Quickshell.execDetached(["systemctl", "--user", action, "8bitdo-micro-focus-switch.service"])
     refreshDelayTimer.restart()
   }
 
@@ -1451,26 +1452,22 @@ Panel {
               font.bold: true
             }
 
-            TextField {
+            SafeTextInput {
               id: keyInput
               width: parent.width
               text: root.editKeyText
               placeholderText: "e.g. Space, LEFTALT+LEFT, F9, or exec:omarchy-launch-terminal"
-              color: root.foreground
+              foreground: root.foreground
+              accent: root.accent
+              cardFillColor: root.cardFillColor
+              cardBorderColor: root.cardBorderColor
               font.family: root.fontFamily
               font.pixelSize: Style.font.bodySmall
-              padding: Style.space(8)
               onTextChanged: root.editKeyText = text
-              Keys.onReturnPressed: root.saveEditedBinding(false)
-              Keys.onEscapePressed: {
+              onReturnPressed: root.saveEditedBinding(false)
+              onEscapePressed: {
                 root.cancelPhysicalKeyCapture()
                 root.editingBinding = false
-              }
-              background: Rectangle {
-                radius: Style.space(6)
-                color: root.cardFillColor
-                border.color: keyInput.activeFocus ? root.accent : root.cardBorderColor
-                border.width: keyInput.activeFocus ? 1.5 : 1
               }
             }
           }
@@ -1488,26 +1485,22 @@ Panel {
               font.bold: true
             }
 
-            TextField {
+            SafeTextInput {
               id: descInput
               width: parent.width
               text: root.editDescText
               placeholderText: "e.g. Play / Pause video, Focus search bar, Toggle fullscreen"
-              color: root.foreground
+              foreground: root.foreground
+              accent: root.accent
+              cardFillColor: root.cardFillColor
+              cardBorderColor: root.cardBorderColor
               font.family: root.fontFamily
               font.pixelSize: Style.font.bodySmall
-              padding: Style.space(8)
               onTextChanged: root.editDescText = text
-              Keys.onReturnPressed: root.saveEditedBinding(false)
-              Keys.onEscapePressed: {
+              onReturnPressed: root.saveEditedBinding(false)
+              onEscapePressed: {
                 root.cancelPhysicalKeyCapture()
                 root.editingBinding = false
-              }
-              background: Rectangle {
-                radius: Style.space(6)
-                color: root.cardFillColor
-                border.color: descInput.activeFocus ? root.accent : root.cardBorderColor
-                border.width: descInput.activeFocus ? 1.5 : 1
               }
             }
           }
