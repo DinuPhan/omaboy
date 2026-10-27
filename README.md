@@ -44,10 +44,23 @@ I split the setup into two small parts that talk to each other:
 
 ## Prerequisites & External Dependencies
 
-OmaBoy reads controller status and profile mappings from [`8bitdo-micro-focus-switch`](https://github.com/DinuPhan/8bitdo-micro-focus-switch) (`MIT` license). Install the reviewed release pinned to its immutable commit SHA (`502d4aa392565301de6f74a2c6a9017b160e959a`) and run the one-step setup:
+OmaBoy reads controller status and profile mappings from [`8bitdo-micro-focus-switch`](https://github.com/DinuPhan/8bitdo-micro-focus-switch) (`MIT` license).
+
+### Option A: Download Pre-compiled Binary (Recommended — Instant, 0 Compilation)
+
+Download the standalone executable directly into `~/.local/bin/` and run setup:
 
 ```bash
-cargo install --git https://github.com/DinuPhan/8bitdo-micro-focus-switch.git --rev 502d4aa392565301de6f74a2c6a9017b160e959a
+curl -fsSL https://github.com/DinuPhan/8bitdo-micro-focus-switch/releases/latest/download/8bitdo-micro-focus-switch-linux-x86_64.tar.gz | tar -xz -C ~/.local/bin/
+8bitdo-micro-focus-switch setup
+```
+
+### Option B: Build from Source with Cargo (Pinned Commit)
+
+If you prefer compiling directly from source on Rust:
+
+```bash
+cargo install --git https://github.com/DinuPhan/8bitdo-micro-focus-switch.git --rev 90c7fae5fc7ab3ad513b27bc2a8b5760e79935ed
 8bitdo-micro-focus-switch setup
 ```
 
