@@ -616,6 +616,10 @@ Panel {
   function toggleKeyOsd() {
     root.osdEnabled = !root.osdEnabled
     if (root.osdEnabled) {
+      root.lastKeypressSeq = -1
+      var kpPath = keypressFileView.path
+      keypressFileView.path = ""
+      keypressFileView.path = kpPath
       root.statusNotice = "󰍹 On-Screen Key-Press Overlay: ENABLED (Demo / Onboarding Mode)"
       noticeClearTimer.restart()
       root.triggerKeyOsd({
