@@ -866,6 +866,7 @@ Panel {
                 Text {
                   anchors.centerIn: parent
                   text: "󰊴"
+                  textFormat: Text.PlainText
                   color: root.connected ? root.accent : root.dim
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.title
@@ -878,6 +879,7 @@ Panel {
 
                 Text {
                   text: "OmaBoy · " + (root.connected ? root.deviceModel : "Controller Standby")
+                  textFormat: Text.PlainText
                   color: root.foreground
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.subtitle
@@ -887,6 +889,7 @@ Panel {
                 Text {
                   text: (root.connected ? "🟢 Connected (uinput <1ms)" : "⚪ Bluetooth Sleeping")
                     + "   •   Active Window Profile: " + root.activeProfileName.toUpperCase()
+                  textFormat: Text.PlainText
                   color: root.dim
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.caption
@@ -949,6 +952,7 @@ Panel {
               id: noticeLabel
               anchors.centerIn: parent
               text: root.statusNotice
+              textFormat: Text.PlainText
               color: root.foreground
               font.family: root.fontFamily
               font.pixelSize: Style.font.bodySmall
@@ -1169,6 +1173,7 @@ Panel {
                       Text {
                         anchors.centerIn: parent
                         text: calloutItem.modelData.label
+                        textFormat: Text.PlainText
                         color: calloutItem.badgeColor
                         font.family: root.fontFamily
                         font.pixelSize: Style.font.caption
@@ -1185,6 +1190,7 @@ Panel {
                       Text {
                         width: parent.width
                         text: calloutItem.actLabel
+                        textFormat: Text.PlainText
                         color: calloutItem.rawAct === "None" ? root.dim : root.foreground
                         font.family: root.fontFamily
                         font.pixelSize: Style.font.caption
@@ -1196,6 +1202,7 @@ Panel {
                         visible: calloutItem.descStr !== ""
                         width: parent.width
                         text: calloutItem.descStr
+                        textFormat: Text.PlainText
                         color: root.dim
                         font.family: root.fontFamily
                         font.pixelSize: Math.max(9, Style.font.caption - 2)
@@ -1254,6 +1261,7 @@ Panel {
                   Text {
                     anchors.centerIn: parent
                     text: "⚡ COMBOS"
+                    textFormat: Text.PlainText
                     color: Qt.color(root.colShoulder)
                     font.family: root.fontFamily
                     font.pixelSize: Style.font.caption
@@ -1266,6 +1274,7 @@ Panel {
                   text: root.viewMode === "omarchy"
                     ? "Global Omarchy L2 Chords (inherited by all profiles · click any chip to edit)"
                     : ("Multi-button chords for [" + root.selectedProfileName.toUpperCase() + "] (click any chip to edit)")
+                  textFormat: Text.PlainText
                   color: root.dim
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.caption
@@ -1300,6 +1309,7 @@ Panel {
 
                       Text {
                         text: String(comboChip.modelData.combo || "")
+                        textFormat: Text.PlainText
                         color: Qt.color(root.colFace)
                         font.family: root.fontFamily
                         font.pixelSize: Style.font.caption
@@ -1308,6 +1318,7 @@ Panel {
 
                       Text {
                         text: "➔"
+                        textFormat: Text.PlainText
                         color: root.accent
                         font.family: root.fontFamily
                         font.pixelSize: Style.font.caption
@@ -1316,6 +1327,7 @@ Panel {
 
                       Text {
                         text: root.prettyAction(comboChip.modelData.label, 18)
+                        textFormat: Text.PlainText
                         color: root.foreground
                         font.family: root.fontFamily
                         font.pixelSize: Style.font.caption
@@ -1325,6 +1337,7 @@ Panel {
                       Text {
                         visible: String(comboChip.modelData.description || "") !== ""
                         text: "• " + String(comboChip.modelData.description || "")
+                        textFormat: Text.PlainText
                         color: root.dim
                         font.family: root.fontFamily
                         font.pixelSize: Style.font.caption
@@ -1409,6 +1422,7 @@ Panel {
 
               Text {
                 text: "Change Keybinding · " + root.editButtonLabel
+                textFormat: Text.PlainText
                 color: root.foreground
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.subtitle
@@ -1417,6 +1431,7 @@ Panel {
 
               Text {
                 text: "Capture a physical keypress, click a preset chip, or enter a custom key / exec: command."
+                textFormat: Text.PlainText
                 color: root.dim
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.caption
@@ -1724,6 +1739,7 @@ Panel {
                 text: root.osdIsGlobalLayer
                   ? "⚡ OMARCHY FN LAYER (HOLD L2)"
                   : ("󰊴 PROFILE · " + root.osdProfileName.toUpperCase())
+                textFormat: Text.PlainText
                 color: Qt.color(root.osdPrimaryColor)
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.caption - 1
@@ -1749,6 +1765,7 @@ Panel {
                   visible: index > 0
                   anchors.verticalCenter: parent.verticalCenter
                   text: "+"
+                  textFormat: Text.PlainText
                   color: root.dim
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.bodySmall
@@ -1767,6 +1784,7 @@ Panel {
                     id: capLabel
                     anchors.centerIn: parent
                     text: btnMeta.label
+                    textFormat: Text.PlainText
                     color: Qt.color(btnMeta.color)
                     font.family: root.fontFamily
                     font.pixelSize: Style.font.caption
@@ -1779,6 +1797,7 @@ Panel {
             Text {
               anchors.verticalCenter: parent.verticalCenter
               text: "➔"
+              textFormat: Text.PlainText
               color: Qt.color(root.osdPrimaryColor)
               font.family: root.fontFamily
               font.pixelSize: Style.font.bodySmall
@@ -1797,6 +1816,7 @@ Panel {
                 id: mappedKeyText
                 anchors.centerIn: parent
                 text: root.osdPrettyKey
+                textFormat: Text.PlainText
                 color: root.foreground
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.caption
@@ -1808,6 +1828,7 @@ Panel {
           // Row 3: Human-Readable Action Description (for Onboarding & Demo)
           Text {
             text: root.osdDescription
+            textFormat: Text.PlainText
             color: root.foreground
             font.family: root.fontFamily
             font.pixelSize: Style.font.bodySmall

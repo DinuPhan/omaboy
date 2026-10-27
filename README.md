@@ -44,10 +44,10 @@ I split the setup into two small parts that talk to each other:
 
 ## Prerequisites & External Dependencies
 
-OmaBoy reads controller status and profile mappings from [`8bitdo-micro-focus-switch`](https://github.com/DinuPhan/8bitdo-micro-focus-switch) (`MIT` license). Install the reviewed release pinned to its immutable commit SHA (`a40718e6dfdc4fd3bee5b74dc255baf8abade2ee`) and run the one-step setup:
+OmaBoy reads controller status and profile mappings from [`8bitdo-micro-focus-switch`](https://github.com/DinuPhan/8bitdo-micro-focus-switch) (`MIT` license). Install the reviewed release pinned to its immutable commit SHA (`502d4aa392565301de6f74a2c6a9017b160e959a`) and run the one-step setup:
 
 ```bash
-cargo install --git https://github.com/DinuPhan/8bitdo-micro-focus-switch.git --rev a40718e6dfdc4fd3bee5b74dc255baf8abade2ee
+cargo install --git https://github.com/DinuPhan/8bitdo-micro-focus-switch.git --rev 502d4aa392565301de6f74a2c6a9017b160e959a
 8bitdo-micro-focus-switch setup
 ```
 
