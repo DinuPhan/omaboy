@@ -46,21 +46,10 @@ I split the setup into two small parts that talk to each other:
 
 OmaBoy reads controller status and profile mappings from [`8bitdo-micro-focus-switch`](https://github.com/DinuPhan/8bitdo-micro-focus-switch) (`MIT` license).
 
-### Option A: Download Pre-compiled Binary (Recommended — Instant, 0 Compilation)
-
-Download the standalone executable directly into `~/.local/bin/` and run setup:
+Install the lightweight CLI/daemon from the reviewed, pinned source commit and run `setup`:
 
 ```bash
-curl -fsSL https://github.com/DinuPhan/8bitdo-micro-focus-switch/releases/latest/download/8bitdo-micro-focus-switch-linux-x86_64.tar.gz | tar -xz -C ~/.local/bin/
-8bitdo-micro-focus-switch setup
-```
-
-### Option B: Build from Source with Cargo (Pinned Commit)
-
-If you prefer compiling directly from source on Rust:
-
-```bash
-cargo install --git https://github.com/DinuPhan/8bitdo-micro-focus-switch.git --rev d9e02f1ce50712088a85d0b845d96326d2301959
+cargo install --git https://github.com/DinuPhan/8bitdo-micro-focus-switch.git --rev 8a8eac9da9060953cbe1366437a684f218463998
 8bitdo-micro-focus-switch setup
 ```
 

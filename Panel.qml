@@ -737,7 +737,7 @@ Panel {
 
   FileView {
     id: keypressFileView
-    path: (Quickshell.env("XDG_RUNTIME_DIR") ? Quickshell.env("XDG_RUNTIME_DIR") : ((Quickshell.env("HOME") || "") + "/.cache")) + "/8bitdo-micro/last_keypress.json"
+    path: Quickshell.env("XDG_RUNTIME_DIR") ? (Quickshell.env("XDG_RUNTIME_DIR") + "/8bitdo-micro/last_keypress.json") : ""
     watchChanges: true
     printErrors: false
     onLoaded: root.handleKeypressFileText(text())
