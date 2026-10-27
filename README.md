@@ -4,7 +4,7 @@
 
 **OmaBoy** is a native [Omarchy Quattro](https://plugins.omarchy.org/) status bar widget, interactive controller HUD, and live Key-Caster OSD overlay for the **8BitDo Micro** and **8BitDo Zero 2** pocket controllers, powered by [`8bitdo-micro-focus-switch`](https://github.com/DinuPhan/8bitdo-micro-focus-switch).
 
-![OmaBoy HUD and Live Key-Caster OSD](preview.png)
+![OmaBoy HUD and Live Key-Caster OSD](preview.gif)
 
 ## Why?
 
