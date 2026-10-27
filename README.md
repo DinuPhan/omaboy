@@ -60,7 +60,7 @@ curl -fsSL https://github.com/DinuPhan/8bitdo-micro-focus-switch/releases/latest
 If you prefer compiling directly from source on Rust:
 
 ```bash
-cargo install --git https://github.com/DinuPhan/8bitdo-micro-focus-switch.git --rev 90c7fae5fc7ab3ad513b27bc2a8b5760e79935ed
+cargo install --git https://github.com/DinuPhan/8bitdo-micro-focus-switch.git --rev 8fdb24146ee26a5dcbadea77600b26701d4d884c
 8bitdo-micro-focus-switch setup
 ```
 
