@@ -5,6 +5,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import qs.Commons
 import qs.Ui
+import "OsdState.js" as OsdState
 
 Panel {
   id: root
@@ -200,6 +201,7 @@ Panel {
   property string selectedProfileName: "agy"
   property string hoveredButtonKey: ""
   property string statusNotice: ""
+  property bool globalCombosCollapsed: true
 
   // Interactive Rebind Modal State
   property bool editingBinding: false
@@ -295,6 +297,45 @@ Panel {
   readonly property var currentCombos: currentProfile && currentProfile.combos ? currentProfile.combos : []
   readonly property var displayedCombos: viewMode === "omarchy" ? globalCombos : currentCombos
 
+  function comboKey(item) {
+    if (!item) return ""
+    if (item.buttons && item.buttons.slice) {
+      return item.buttons.slice().sort().join("+")
+    }
+    return String(item.combo || "")
+  }
+
+  function sameComboEntry(a, b) {
+    if (!a || !b) return false
+    var kA = comboKey(a)
+    var kB = comboKey(b)
+    if (kA !== "" && kB !== "") {
+      if (kA !== kB) return false
+    } else if (String(a.combo || "") !== String(b.combo || "")) {
+      return false
+    }
+    return String(a.label || "") === String(b.label || "")
+  }
+
+  readonly property var appSpecificCombos: {
+    if (!currentCombos || !currentCombos.length) return []
+    var list = []
+    for (var i = 0; i < currentCombos.length; i++) {
+      var c = currentCombos[i]
+      var isGlobal = false
+      if (globalCombos && globalCombos.length) {
+        for (var j = 0; j < globalCombos.length; j++) {
+          if (sameComboEntry(c, globalCombos[j])) {
+            isGlobal = true
+            break
+          }
+        }
+      }
+      if (!isGlobal) list.push(c)
+    }
+    return list
+  }
+
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)) }
   function alpha(c, a) { return Qt.rgba(c.r, c.g, c.b, a) }
 
@@ -384,8 +425,9 @@ Panel {
     Qt.callLater(function() { keyInput.forceActiveFocus() })
   }
 
-  function openComboRebindModal(comboItem) {
-    editProfileTarget = viewMode === "omarchy" ? "global" : selectedProfileName
+  function openComboRebindModal(comboItem, forceGlobal) {
+    var isGlobal = Boolean(forceGlobal) || (viewMode === "omarchy")
+    editProfileTarget = isGlobal ? "global" : selectedProfileName
     editButtonTarget = String(comboItem.combo || "L+R")
     editButtonLabel = "[" + editProfileTarget.toUpperCase() + "]  Combo " + editButtonTarget
     editButtonColor = root.colShoulder
@@ -552,8 +594,12 @@ Panel {
     return "Send " + prettyAction(k, 32)
   }
 
+  function isPrimaryInstance() {
+    return OsdState.isPrimary(root)
+  }
+
   function triggerKeyOsd(payload) {
-    if (!root.osdEnabled || !payload) return
+    if (!root.osdEnabled || !OsdState.enabled || !payload || !root.isPrimaryInstance()) return
     var btns = Array.isArray(payload.buttons) && payload.buttons.length > 0
       ? payload.buttons
       : (payload.button ? String(payload.button).split("+") : ["A"])
@@ -613,29 +659,40 @@ Panel {
     } catch (e) {}
   }
 
-  function toggleKeyOsd() {
-    root.osdEnabled = !root.osdEnabled
-    if (root.osdEnabled) {
+  function applyOsdEnabledState(enabled, showToastAndDemo) {
+    root.osdEnabled = enabled
+    if (enabled) {
       root.lastKeypressSeq = -1
       var kpPath = keypressFileView.path
       keypressFileView.path = ""
       keypressFileView.path = kpPath
-      root.statusNotice = "󰍹 On-Screen Key-Press Overlay: ENABLED (Demo / Onboarding Mode)"
-      noticeClearTimer.restart()
-      root.triggerKeyOsd({
-        buttons: ["L2", "START"],
-        key: "OmaBoy Key-Caster OSD",
-        description: "Key-Press Overlay Active — Press any controller button!",
-        profile: root.activeProfileName,
-        is_global_layer: true
-      })
+      if (showToastAndDemo) {
+        root.statusNotice = "󰍹 On-Screen Key-Press Overlay: ENABLED (Demo / Onboarding Mode)"
+        noticeClearTimer.restart()
+      }
+      if (showToastAndDemo && root.isPrimaryInstance()) {
+        root.triggerKeyOsd({
+          buttons: ["L2", "START"],
+          key: "OmaBoy Key-Caster OSD",
+          description: "Key-Press Overlay Active — Press any controller button!",
+          profile: root.activeProfileName,
+          is_global_layer: true
+        })
+      }
     } else {
       root.osdVisible = false
       osdHideTimer.stop()
-      root.statusNotice = "󰍹 On-Screen Key-Press Overlay: DISABLED"
-      noticeClearTimer.restart()
+      osdProgressAnim.stop()
+      if (showToastAndDemo) {
+        root.statusNotice = "󰍹 On-Screen Key-Press Overlay: DISABLED"
+        noticeClearTimer.restart()
+      }
       leaderCanvas.requestPaint()
     }
+  }
+
+  function toggleKeyOsd() {
+    OsdState.setEnabled(!OsdState.enabled, root)
   }
 
   function toggleDaemonService() {
@@ -739,6 +796,7 @@ Panel {
     id: keypressFileView
     path: Quickshell.env("XDG_RUNTIME_DIR") ? (Quickshell.env("XDG_RUNTIME_DIR") + "/8bitdo-micro/last_keypress.json") : ""
     watchChanges: true
+    atomicWrites: true
     printErrors: false
     onLoaded: root.handleKeypressFileText(text())
     onFileChanged: reload()
@@ -751,12 +809,18 @@ Panel {
     onTriggered: root.refreshStatus(!root.opened)
   }
 
-  Component.onCompleted: root.refreshStatus(true)
+  Component.onCompleted: {
+    root.osdEnabled = OsdState.registerInstance(root, setting("osdEnabled", true))
+    root.refreshStatus(true)
+  }
+  Component.onDestruction: OsdState.unregisterInstance(root)
 
   onOpenedChanged: {
     if (opened) {
+      root.osdEnabled = OsdState.enabled
       editingBinding = false
       capturingKeypress = false
+      globalCombosCollapsed = true
       viewMode = setting("showOmarchyLayerFirst", false) ? "omarchy" : "profile"
       if (panelFlick) panelFlick.contentY = 0
       refreshStatus(true)
@@ -764,6 +828,12 @@ Panel {
     } else {
       cancelPhysicalKeyCapture()
       editingBinding = false
+    }
+  }
+
+  onGlobalCombosCollapsedChanged: {
+    if (globalCombosCollapsed && panelFlick && panelFlick.contentY > Math.max(0, panelFlick.contentHeight - panelFlick.height)) {
+      panelFlick.contentY = Math.max(0, panelFlick.contentHeight - panelFlick.height)
     }
   }
 
@@ -831,6 +901,7 @@ Panel {
         else if (t === "l" || t === "L") root.viewMode = root.viewMode === "profile" ? "omarchy" : "profile"
         else if (t === "e" || t === "E") root.editProfilesInEditor()
         else if (t === "o" || t === "O") root.toggleKeyOsd()
+        else if (t === "g" || t === "G") root.globalCombosCollapsed = !root.globalCombosCollapsed
       }
 
       Flickable {
@@ -1249,22 +1320,27 @@ Panel {
               anchors.right: parent.right
               anchors.top: parent.top
               anchors.margins: Style.space(11)
-              spacing: Style.space(8)
+              spacing: Style.space(10)
 
+              // ----------------------------------------------------
+              // OMARCHY VIEW MODE: Dedicated Global L2 Layer Chords
+              // ----------------------------------------------------
               Row {
+                visible: root.viewMode === "omarchy"
                 width: parent.width
                 spacing: Style.space(8)
 
                 BorderSurface {
-                  width: Style.space(88)
+                  implicitWidth: omarchyBadgeText.implicitWidth + Style.space(16)
                   height: Style.space(24)
                   radius: Style.space(4)
                   color: root.alpha(Qt.color(root.colShoulder), root.isLightTheme ? 0.14 : 0.18)
                   borderSpec: Border.flat(Qt.color(root.colShoulder), 1.2)
 
                   Text {
+                    id: omarchyBadgeText
                     anchors.centerIn: parent
-                    text: "⚡ COMBOS"
+                    text: "🌐 GLOBAL LAYER"
                     textFormat: Text.PlainText
                     color: Qt.color(root.colShoulder)
                     font.family: root.fontFamily
@@ -1275,9 +1351,7 @@ Panel {
 
                 Text {
                   anchors.verticalCenter: parent.verticalCenter
-                  text: root.viewMode === "omarchy"
-                    ? "Global Omarchy L2 Chords (inherited by all profiles · click any chip to edit)"
-                    : ("Multi-button chords for [" + root.selectedProfileName.toUpperCase() + "] (click any chip to edit)")
+                  text: "Global Omarchy L2 Chords (universal across all profiles · click any chip to edit)"
                   textFormat: Text.PlainText
                   color: root.dim
                   font.family: root.fontFamily
@@ -1286,33 +1360,34 @@ Panel {
               }
 
               Flow {
+                visible: root.viewMode === "omarchy"
                 width: parent.width
                 spacing: Style.space(8)
 
                 Repeater {
-                  model: root.displayedCombos
+                  model: root.globalCombos
 
                   BorderSurface {
-                    id: comboChip
+                    id: omarchyComboChip
                     required property var modelData
-                    implicitWidth: chipRow.implicitWidth + Style.space(18)
+                    implicitWidth: omarchyChipRow.implicitWidth + Style.space(18)
                     implicitHeight: Style.space(30)
                     radius: Style.space(6)
-                    color: chipMouse.containsMouse
+                    color: omarchyChipMouse.containsMouse
                       ? root.alpha(root.accent, root.isLightTheme ? 0.15 : 0.18)
                       : root.cardFillColor
                     borderSpec: Border.flat(
-                      chipMouse.containsMouse ? root.accent : root.cardBorderColor,
-                      chipMouse.containsMouse ? 1.5 : 1.1
+                      omarchyChipMouse.containsMouse ? root.accent : root.cardBorderColor,
+                      omarchyChipMouse.containsMouse ? 1.5 : 1.1
                     )
 
                     Row {
-                      id: chipRow
+                      id: omarchyChipRow
                       anchors.centerIn: parent
                       spacing: Style.space(6)
 
                       Text {
-                        text: String(comboChip.modelData.combo || "")
+                        text: String(omarchyComboChip.modelData.combo || "")
                         textFormat: Text.PlainText
                         color: Qt.color(root.colFace)
                         font.family: root.fontFamily
@@ -1330,7 +1405,7 @@ Panel {
                       }
 
                       Text {
-                        text: root.prettyAction(comboChip.modelData.label, 18)
+                        text: root.prettyAction(omarchyComboChip.modelData.label, 18)
                         textFormat: Text.PlainText
                         color: root.foreground
                         font.family: root.fontFamily
@@ -1339,8 +1414,8 @@ Panel {
                       }
 
                       Text {
-                        visible: String(comboChip.modelData.description || "") !== ""
-                        text: "• " + String(comboChip.modelData.description || "")
+                        visible: String(omarchyComboChip.modelData.description || "") !== ""
+                        text: "• " + String(omarchyComboChip.modelData.description || "")
                         textFormat: Text.PlainText
                         color: root.dim
                         font.family: root.fontFamily
@@ -1349,18 +1424,335 @@ Panel {
                     }
 
                     MouseArea {
-                      id: chipMouse
+                      id: omarchyChipMouse
                       anchors.fill: parent
                       hoverEnabled: true
                       cursorShape: Qt.PointingHandCursor
-                      onClicked: root.openComboRebindModal(comboChip.modelData)
+                      onClicked: root.openComboRebindModal(omarchyComboChip.modelData, true)
                     }
 
                     PanelToolTip {
-                      visible: chipMouse.containsMouse
-                      text: String(comboChip.modelData.combo) + "  ➔  " + String(comboChip.modelData.label)
-                        + (comboChip.modelData.description ? ("\n“" + comboChip.modelData.description + "”") : "")
-                        + "\n(Click to edit combo binding)"
+                      visible: omarchyChipMouse.containsMouse
+                      text: "[GLOBAL] " + String(omarchyComboChip.modelData.combo) + "  ➔  " + String(omarchyComboChip.modelData.label)
+                        + (omarchyComboChip.modelData.description ? ("\n“" + omarchyComboChip.modelData.description + "”") : "")
+                        + "\n(Universal L2 chord · Click to edit)"
+                      fontFamily: root.fontFamily
+                    }
+                  }
+                }
+              }
+
+              // ----------------------------------------------------
+              // PROFILE VIEW MODE: 1. Application-Specific Combos
+              // ----------------------------------------------------
+              Row {
+                visible: root.viewMode === "profile"
+                width: parent.width
+                spacing: Style.space(8)
+
+                BorderSurface {
+                  implicitWidth: appBadgeText.implicitWidth + Style.space(16)
+                  height: Style.space(24)
+                  radius: Style.space(4)
+                  color: root.alpha(Qt.color(root.colShoulder), root.isLightTheme ? 0.14 : 0.18)
+                  borderSpec: Border.flat(Qt.color(root.colShoulder), 1.2)
+
+                  Text {
+                    id: appBadgeText
+                    anchors.centerIn: parent
+                    text: "⚡ [" + root.selectedProfileName.toUpperCase() + "] COMBOS"
+                    textFormat: Text.PlainText
+                    color: Qt.color(root.colShoulder)
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.caption
+                    font.bold: true
+                  }
+                }
+
+                Text {
+                  anchors.verticalCenter: parent.verticalCenter
+                  text: root.appSpecificCombos.length > 0
+                    ? ("Application-specific chords for [" + root.selectedProfileName.toUpperCase() + "] (click any chip to edit)")
+                    : ("No custom chords defined for [" + root.selectedProfileName.toUpperCase() + "] (global layer chords active below)")
+                  textFormat: Text.PlainText
+                  color: root.dim
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.caption
+                }
+              }
+
+              Flow {
+                visible: root.viewMode === "profile" && root.appSpecificCombos.length > 0
+                width: parent.width
+                spacing: Style.space(8)
+
+                Repeater {
+                  model: root.appSpecificCombos
+
+                  BorderSurface {
+                    id: appComboChip
+                    required property var modelData
+                    implicitWidth: appChipRow.implicitWidth + Style.space(18)
+                    implicitHeight: Style.space(30)
+                    radius: Style.space(6)
+                    color: appChipMouse.containsMouse
+                      ? root.alpha(root.accent, root.isLightTheme ? 0.15 : 0.18)
+                      : root.cardFillColor
+                    borderSpec: Border.flat(
+                      appChipMouse.containsMouse ? root.accent : root.cardBorderColor,
+                      appChipMouse.containsMouse ? 1.5 : 1.1
+                    )
+
+                    Row {
+                      id: appChipRow
+                      anchors.centerIn: parent
+                      spacing: Style.space(6)
+
+                      Text {
+                        text: String(appComboChip.modelData.combo || "")
+                        textFormat: Text.PlainText
+                        color: Qt.color(root.colFace)
+                        font.family: root.fontFamily
+                        font.pixelSize: Style.font.caption
+                        font.bold: true
+                      }
+
+                      Text {
+                        text: "➔"
+                        textFormat: Text.PlainText
+                        color: root.accent
+                        font.family: root.fontFamily
+                        font.pixelSize: Style.font.caption
+                        font.bold: true
+                      }
+
+                      Text {
+                        text: root.prettyAction(appComboChip.modelData.label, 18)
+                        textFormat: Text.PlainText
+                        color: root.foreground
+                        font.family: root.fontFamily
+                        font.pixelSize: Style.font.caption
+                        font.bold: true
+                      }
+
+                      Text {
+                        visible: String(appComboChip.modelData.description || "") !== ""
+                        text: "• " + String(appComboChip.modelData.description || "")
+                        textFormat: Text.PlainText
+                        color: root.dim
+                        font.family: root.fontFamily
+                        font.pixelSize: Style.font.caption
+                      }
+                    }
+
+                    MouseArea {
+                      id: appChipMouse
+                      anchors.fill: parent
+                      hoverEnabled: true
+                      cursorShape: Qt.PointingHandCursor
+                      onClicked: root.openComboRebindModal(appComboChip.modelData, false)
+                    }
+
+                    PanelToolTip {
+                      visible: appChipMouse.containsMouse
+                      text: "[" + root.selectedProfileName.toUpperCase() + "] " + String(appComboChip.modelData.combo) + "  ➔  " + String(appComboChip.modelData.label)
+                        + (appComboChip.modelData.description ? ("\n“" + appComboChip.modelData.description + "”") : "")
+                        + "\n(Click to edit app chord)"
+                      fontFamily: root.fontFamily
+                    }
+                  }
+                }
+              }
+
+              Text {
+                visible: root.viewMode === "profile" && root.appSpecificCombos.length === 0
+                width: parent.width
+                text: "No custom chords configured for this application. Universal shortcuts below apply."
+                textFormat: Text.PlainText
+                color: root.dim
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                font.italic: true
+                leftPadding: Style.space(4)
+              }
+
+              // ----------------------------------------------------
+              // PROFILE VIEW MODE: 2. Collapsible Global Omarchy Layer
+              // ----------------------------------------------------
+              Rectangle {
+                visible: root.viewMode === "profile"
+                width: parent.width
+                height: 1
+                color: root.cardBorderColor
+                opacity: 0.6
+              }
+
+              BorderSurface {
+                visible: root.viewMode === "profile"
+                width: parent.width
+                implicitHeight: Style.space(32)
+                radius: Style.space(6)
+                color: globalToggleMouse.containsMouse
+                  ? root.alpha(root.foreground, root.isLightTheme ? 0.08 : 0.07)
+                  : root.alpha(root.foreground, root.isLightTheme ? 0.03 : 0.02)
+                borderSpec: Border.flat(
+                  globalToggleMouse.containsMouse ? root.accent : root.cardBorderColor,
+                  globalToggleMouse.containsMouse ? 1.2 : 1.0
+                )
+
+                Row {
+                  anchors.left: parent.left
+                  anchors.leftMargin: Style.space(10)
+                  anchors.verticalCenter: parent.verticalCenter
+                  spacing: Style.space(8)
+
+                  Text {
+                    text: root.globalCombosCollapsed ? "▶" : "▼"
+                    textFormat: Text.PlainText
+                    color: root.accent
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.caption
+                    font.bold: true
+                  }
+
+                  Text {
+                    text: "🌐 GLOBAL OMARCHY LAYER"
+                    textFormat: Text.PlainText
+                    color: root.foreground
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.caption
+                    font.bold: true
+                  }
+
+                  BorderSurface {
+                    anchors.verticalCenter: parent.verticalCenter
+                    implicitWidth: countText.implicitWidth + Style.space(12)
+                    implicitHeight: Style.space(18)
+                    radius: Style.space(4)
+                    color: root.alpha(root.accent, 0.15)
+                    borderSpec: Border.flat(root.alpha(root.accent, 0.5), 1.0)
+
+                    Text {
+                      id: countText
+                      anchors.centerIn: parent
+                      text: String(root.globalCombos.length) + " chords"
+                      textFormat: Text.PlainText
+                      color: root.accent
+                      font.family: root.fontFamily
+                      font.pixelSize: Style.font.caption - 1
+                      font.bold: true
+                    }
+                  }
+
+                  Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: root.globalCombosCollapsed
+                      ? "(collapsed · click to view or edit universal L2 chords)"
+                      : "(click to collapse)"
+                    textFormat: Text.PlainText
+                    color: root.dim
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.caption
+                  }
+                }
+
+                Text {
+                  anchors.right: parent.right
+                  anchors.rightMargin: Style.space(10)
+                  anchors.verticalCenter: parent.verticalCenter
+                  text: "[G] to toggle"
+                  textFormat: Text.PlainText
+                  color: root.dim
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.caption
+                }
+
+                MouseArea {
+                  id: globalToggleMouse
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: root.globalCombosCollapsed = !root.globalCombosCollapsed
+                }
+              }
+
+              Flow {
+                visible: root.viewMode === "profile" && !root.globalCombosCollapsed
+                width: parent.width
+                spacing: Style.space(8)
+
+                Repeater {
+                  model: root.globalCombos
+
+                  BorderSurface {
+                    id: globalComboChip
+                    required property var modelData
+                    implicitWidth: globalChipRow.implicitWidth + Style.space(18)
+                    implicitHeight: Style.space(30)
+                    radius: Style.space(6)
+                    color: globalChipMouse.containsMouse
+                      ? root.alpha(root.accent, root.isLightTheme ? 0.15 : 0.18)
+                      : root.cardFillColor
+                    borderSpec: Border.flat(
+                      globalChipMouse.containsMouse ? root.accent : root.cardBorderColor,
+                      globalChipMouse.containsMouse ? 1.5 : 1.1
+                    )
+
+                    Row {
+                      id: globalChipRow
+                      anchors.centerIn: parent
+                      spacing: Style.space(6)
+
+                      Text {
+                        text: String(globalComboChip.modelData.combo || "")
+                        textFormat: Text.PlainText
+                        color: Qt.color(root.colFace)
+                        font.family: root.fontFamily
+                        font.pixelSize: Style.font.caption
+                        font.bold: true
+                      }
+
+                      Text {
+                        text: "➔"
+                        textFormat: Text.PlainText
+                        color: root.accent
+                        font.family: root.fontFamily
+                        font.pixelSize: Style.font.caption
+                        font.bold: true
+                      }
+
+                      Text {
+                        text: root.prettyAction(globalComboChip.modelData.label, 18)
+                        textFormat: Text.PlainText
+                        color: root.foreground
+                        font.family: root.fontFamily
+                        font.pixelSize: Style.font.caption
+                        font.bold: true
+                      }
+
+                      Text {
+                        visible: String(globalComboChip.modelData.description || "") !== ""
+                        text: "• " + String(globalComboChip.modelData.description || "")
+                        textFormat: Text.PlainText
+                        color: root.dim
+                        font.family: root.fontFamily
+                        font.pixelSize: Style.font.caption
+                      }
+                    }
+
+                    MouseArea {
+                      id: globalChipMouse
+                      anchors.fill: parent
+                      hoverEnabled: true
+                      cursorShape: Qt.PointingHandCursor
+                      onClicked: root.openComboRebindModal(globalComboChip.modelData, true)
+                    }
+
+                    PanelToolTip {
+                      visible: globalChipMouse.containsMouse
+                      text: "[GLOBAL] " + String(globalComboChip.modelData.combo) + "  ➔  " + String(globalComboChip.modelData.label)
+                        + (globalComboChip.modelData.description ? ("\n“" + globalComboChip.modelData.description + "”") : "")
+                        + "\n(Universal L2 chord · Click to edit)"
                       fontFamily: root.fontFamily
                     }
                   }
@@ -1468,6 +1860,7 @@ Panel {
 
             Text {
               text: "KEY / CHORD OR SHELL COMMAND (e.g. K, LEFTCTRL+T, VolumeUp, exec:...)"
+              textFormat: Text.PlainText
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
@@ -1501,6 +1894,7 @@ Panel {
 
             Text {
               text: "TOOLTIP / SUBTITLE DESCRIPTION (saved as inline # comment in profiles.toml)"
+              textFormat: Text.PlainText
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
@@ -1534,6 +1928,7 @@ Panel {
 
             Text {
               text: "QUICK-PICK KEYS"
+              textFormat: Text.PlainText
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption

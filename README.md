@@ -33,7 +33,7 @@ I split the setup into two small parts that talk to each other:
   - Draws the 8BitDo Micro with color-coded lines to each button so you can read your layout at a glance.
   - Click any button card, pin, or combo chip to rebind it. You can capture a key directly from your keyboard, pick from common shortcuts, or type a custom command.
   - Switches views automatically to match your focused window (`agy`, `youtube`, `anki`, `browser`, `media`).
-  - Includes a separate tab for your **Omarchy Global Layer**, where two-button chords control your window manager from inside any app.
+  - Separates app-specific two-button combos (`⚡ [<APP>] COMBOS`) from a collapsible `🌐 GLOBAL OMARCHY LAYER` drawer (collapsed by default; click or press `G` to expand) plus a dedicated **Omarchy Global Layer** tab.
   - Adapts its colors to both dark and light Omarchy themes so labels stay easy to read.
 - **Live Key-Caster OSD overlay**:
   - Shows a small, click-through popup in the bottom-right corner whenever you press a button or combo on the controller.
@@ -51,13 +51,15 @@ OmaBoy reads controller status and profile mappings from [`8bitdo-micro-focus-sw
 Download the standalone executable directly into `~/.local/bin/` with SHA-256 integrity verification inside a private temporary directory:
 
 ```bash
-TMPDIR=$(mktemp -d) && \
-curl -fsSL -o "$TMPDIR/8bitdo-micro-focus-switch.tar.gz" \
-  https://github.com/DinuPhan/8bitdo-micro-focus-switch/releases/download/v0.4.1/8bitdo-micro-focus-switch-linux-x86_64.tar.gz && \
-echo "7b0e8a3f12ee400be52d25d9e774efcb0a475decb4439ca0930a1917fccf028a  $TMPDIR/8bitdo-micro-focus-switch.tar.gz" | sha256sum --check --strict && \
-tar -xzf "$TMPDIR/8bitdo-micro-focus-switch.tar.gz" -C ~/.local/bin/ && \
-rm -rf "$TMPDIR" && \
-8bitdo-micro-focus-switch setup
+(
+  dl_dir=$(mktemp -d) && trap 'rm -rf "$dl_dir"' EXIT && \
+  curl -fsSL -o "$dl_dir/8bitdo-micro-focus-switch.tar.gz" \
+    https://github.com/DinuPhan/8bitdo-micro-focus-switch/releases/download/v0.4.2/8bitdo-micro-focus-switch-linux-x86_64.tar.gz && \
+  echo "2b98b789b07a345b02d0cc1675259d82747ca57635c3191878420bec3c64a000  $dl_dir/8bitdo-micro-focus-switch.tar.gz" | sha256sum --check --strict && \
+  mkdir -p ~/.local/bin && \
+  tar -xzf "$dl_dir/8bitdo-micro-focus-switch.tar.gz" -C ~/.local/bin/ && \
+  8bitdo-micro-focus-switch setup
+)
 ```
 
 ### Option B: Build from Source with Cargo (Pinned Commit)
@@ -65,7 +67,7 @@ rm -rf "$TMPDIR" && \
 If you prefer compiling directly from source on Rust:
 
 ```bash
-cargo install --git https://github.com/DinuPhan/8bitdo-micro-focus-switch.git --rev 5be43d3e40df5bfb2d10043503e1ca0695a95dd1 && \
+cargo install --git https://github.com/DinuPhan/8bitdo-micro-focus-switch.git --rev 3859fb32a8cff1531dc2c7bc5635f7376c1a5ff3 && \
 8bitdo-micro-focus-switch setup
 ```
 
@@ -111,6 +113,7 @@ Removing the plugin only deletes `~/.config/omarchy/plugins/dinuphan.omaboy` and
 - **Inside Panel**:
   - `Left` / `Right`: Switch between app profiles (`AGY`, `YOUTUBE`, `ANKI`, `BROWSER`, `MEDIA`)
   - `Tab` or `L`: Toggle between **App Keymap** and **Omarchy Global Layer**
+  - `G`: Expand or collapse the **Global Omarchy Layer** section inside App Keymap view
   - `O`: Toggle the on-screen **Key-Caster OSD Overlay** (`ON` / `OFF`)
   - `R` or `Enter`: Reload `profiles.toml`
   - `E`: Open `profiles.toml` in Omarchy editor
