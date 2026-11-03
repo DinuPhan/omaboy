@@ -54,20 +54,30 @@ Download the standalone executable directly into `~/.local/bin/` with SHA-256 in
 (
   dl_dir=$(mktemp -d) && trap 'rm -rf "$dl_dir"' EXIT && \
   curl -fsSL -o "$dl_dir/8bitdo-micro-focus-switch.tar.gz" \
-    https://github.com/DinuPhan/8bitdo-micro-focus-switch/releases/download/v0.4.2/8bitdo-micro-focus-switch-linux-x86_64.tar.gz && \
-  echo "05cf2e74ea819902f47dc2b0fa67afd33c39f392f0e1ba9543532de076a72c1d  $dl_dir/8bitdo-micro-focus-switch.tar.gz" | sha256sum --check --strict && \
+    https://github.com/DinuPhan/8bitdo-micro-focus-switch/releases/download/v0.4.3/8bitdo-micro-focus-switch-linux-x86_64.tar.gz && \
+  echo "befc141dede637e7b983c8b66badb39a0c87f292672a29710f37585e4a3b955c  $dl_dir/8bitdo-micro-focus-switch.tar.gz" | sha256sum --check --strict && \
   mkdir -p ~/.local/bin && \
   tar -xzf "$dl_dir/8bitdo-micro-focus-switch.tar.gz" -C ~/.local/bin/ && \
   8bitdo-micro-focus-switch setup
 )
 ```
 
+> **SLSA Build Provenance Attestation**: The `v0.4.3` archive (`befc141dede637e7b983c8b66badb39a0c87f292672a29710f37585e4a3b955c`) is cryptographically attested by GitHub Actions (`actions/attest-build-provenance@v4`) from commit `72669084b42edf8248621539aba6d7bd6df93112`. If you have the GitHub CLI (`gh`) installed, you can verify its provenance before extraction with:
+> ```bash
+> gh attestation verify "$dl_dir/8bitdo-micro-focus-switch.tar.gz" \
+>   -R DinuPhan/8bitdo-micro-focus-switch \
+>   --signer-workflow DinuPhan/8bitdo-micro-focus-switch/.github/workflows/release.yml \
+>   --source-ref refs/tags/v0.4.3 \
+>   --source-digest 72669084b42edf8248621539aba6d7bd6df93112 \
+>   --deny-self-hosted-runners
+> ```
+
 ### Option B: Build from Source with Cargo (Pinned Commit)
 
 If you prefer compiling directly from source on Rust:
 
 ```bash
-cargo install --git https://github.com/DinuPhan/8bitdo-micro-focus-switch.git --rev 3859fb32a8cff1531dc2c7bc5635f7376c1a5ff3 && \
+cargo install --git https://github.com/DinuPhan/8bitdo-micro-focus-switch.git --rev 72669084b42edf8248621539aba6d7bd6df93112 && \
 8bitdo-micro-focus-switch setup
 ```
 
