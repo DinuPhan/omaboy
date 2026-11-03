@@ -55,7 +55,7 @@ Download the standalone executable directly into `~/.local/bin/` with SHA-256 in
   dl_dir=$(mktemp -d) && trap 'rm -rf "$dl_dir"' EXIT && \
   curl -fsSL -o "$dl_dir/8bitdo-micro-focus-switch.tar.gz" \
     https://github.com/DinuPhan/8bitdo-micro-focus-switch/releases/download/v0.4.2/8bitdo-micro-focus-switch-linux-x86_64.tar.gz && \
-  echo "2b98b789b07a345b02d0cc1675259d82747ca57635c3191878420bec3c64a000  $dl_dir/8bitdo-micro-focus-switch.tar.gz" | sha256sum --check --strict && \
+  echo "05cf2e74ea819902f47dc2b0fa67afd33c39f392f0e1ba9543532de076a72c1d  $dl_dir/8bitdo-micro-focus-switch.tar.gz" | sha256sum --check --strict && \
   mkdir -p ~/.local/bin && \
   tar -xzf "$dl_dir/8bitdo-micro-focus-switch.tar.gz" -C ~/.local/bin/ && \
   8bitdo-micro-focus-switch setup
